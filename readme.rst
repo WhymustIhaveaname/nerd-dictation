@@ -159,6 +159,28 @@ To test dictation:
    They are available `here <https://alphacephei.com/vosk/models>`__.
 
 
+Toggle Script (voice-typing.sh)
+-------------------------------
+
+A convenience script ``voice-typing.sh`` is included for toggling dictation with a single hotkey.
+It starts nerd-dictation on first press and suspends/resumes on subsequent presses.
+It also detects zombie audio child processes (e.g. after system suspend) and force-restarts.
+
+Edit the ``MODEL_DIR`` and ``--engine`` variables at the top to match your setup, then bind it to a key:
+
+.. code-block:: sh
+
+   # GNOME example (Super+H):
+   CUSTOM_PATH=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
+   gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$CUSTOM_PATH']"
+   gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$CUSTOM_PATH \
+       name 'Voice Typing'
+   gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$CUSTOM_PATH \
+       command '/path/to/nerd-dictation/voice-typing.sh'
+   gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$CUSTOM_PATH \
+       binding '<Super>h'
+
+
 If you prefer to use a package, see: `Packaging <package/readme.rst>`_.
 
 

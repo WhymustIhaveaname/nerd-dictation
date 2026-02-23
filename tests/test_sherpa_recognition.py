@@ -13,12 +13,12 @@ MODEL_DIR = os.path.join(
 )
 
 
-def create_recognizer():
+def create_recognizer(model_dir=MODEL_DIR):
     kwargs = dict(
-        encoder=os.path.join(MODEL_DIR, "encoder-epoch-99-avg-1.int8.onnx"),
-        decoder=os.path.join(MODEL_DIR, "decoder-epoch-99-avg-1.onnx"),
-        joiner=os.path.join(MODEL_DIR, "joiner-epoch-99-avg-1.int8.onnx"),
-        tokens=os.path.join(MODEL_DIR, "tokens.txt"),
+        encoder=os.path.join(model_dir, "encoder-epoch-99-avg-1.int8.onnx"),
+        decoder=os.path.join(model_dir, "decoder-epoch-99-avg-1.onnx"),
+        joiner=os.path.join(model_dir, "joiner-epoch-99-avg-1.int8.onnx"),
+        tokens=os.path.join(model_dir, "tokens.txt"),
         num_threads=2,
         sample_rate=16000,
         feature_dim=80,

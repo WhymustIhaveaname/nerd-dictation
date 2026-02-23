@@ -1,0 +1,50 @@
+[
+    {
+        "wav": "zh_slow.wav",
+        "tag": "zh",
+        "speed": "slow",
+        "text": "这个函数的作用是计算两个向量之间的余弦相似度输入是两个浮点数列表返回值是零到一之间的小数"
+    },
+    {
+        "wav": "zh_normal.wav",
+        "tag": "zh",
+        "speed": "normal",
+        "text": "这个函数的作用是计算两个向量之间的余弦相似度输入是两个浮点数列表返回值是零到一之间的小数"
+    },
+    {
+        "wav": "en_slow.wav",
+        "tag": "en",
+        "speed": "slow",
+        "text": "the function takes two parameters a learning rate and a batch size and returns the training loss as a floating point number"
+    },
+    {
+        "wav": "en_normal.wav",
+        "tag": "en",
+        "speed": "normal",
+        "text": "the function takes two parameters a learning rate and a batch size and returns the training loss as a floating point number"
+    },
+    {
+        "wav": "zh_en_lite_slow.wav",
+        "tag": "zh_en_lite",
+        "speed": "slow",
+        "text": "我们用了一个transformer模型来做文本分类训练了大概五十个epoch之后准确率达到了百分之九十五"
+    },
+    {
+        "wav": "zh_en_lite_normal.wav",
+        "tag": "zh_en_lite",
+        "speed": "normal",
+        "text": "我们用了一个transformer模型来做文本分类训练了大概五十个epoch之后准确率达到了百分之九十五"
+    },
+    {
+        "wav": "zh_en_heavy_slow.wav",
+        "tag": "zh_en_heavy",
+        "speed": "slow",
+        "text": "我们的backend用的是python写的主要依赖fastapi框架数据库用的postgresql通过sqlalchemy做orm映射"
+    },
+    {
+        "wav": "zh_en_heavy_normal.wav",
+        "tag": "zh_en_heavy",
+        "speed": "normal",
+        "text": "我们的backend用的是python写的主要依赖fastapi框架数据库用的postgresql通过sqlalchemy做orm映射"
+    }
+]

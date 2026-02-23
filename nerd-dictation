@@ -1284,7 +1284,7 @@ def text_from_sherpa_pipe(
     if verbose >= 1:
         sys.stderr.write("Loading sherpa-onnx model...\n")
 
-    recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
+    model_kwargs = dict(
         encoder=os.path.join(model_dir, "encoder-epoch-99-avg-1.int8.onnx"),
         decoder=os.path.join(model_dir, "decoder-epoch-99-avg-1.onnx"),
         joiner=os.path.join(model_dir, "joiner-epoch-99-avg-1.int8.onnx"),
@@ -1296,8 +1296,18 @@ def text_from_sherpa_pipe(
         rule1_min_trailing_silence=2.4,
         rule2_min_trailing_silence=1.2,
         rule3_min_utterance_length=300,
-        provider="cuda",
     )
+    for provider in ("cuda", "cpu"):
+        model_kwargs["provider"] = provider
+        # try-catch approved: CUDA libs may be missing, fall back to CPU
+        try:
+            recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(**model_kwargs)
+            break
+        except RuntimeError:
+            if provider == "cpu":
+                raise
+            if verbose >= 1:
+                sys.stderr.write("CUDA unavailable, falling back to CPU.\n")
 
     if verbose >= 1:
         sys.stderr.write("Model loaded.\n")
