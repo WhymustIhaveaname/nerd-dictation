@@ -5,7 +5,12 @@ Nerd Dictation
 *Offline Speech to Text for Desktop Linux.* - See `demo video <https://www.youtube.com/watch?v=T7sR-4DFhpQ>`__.
 
 This is a utility that provides simple access speech to text for using in Linux
-without being tied to a desktop environment, using the excellent `VOSK-API <https://github.com/alphacep/vosk-api>`__.
+without being tied to a desktop environment.
+
+It supports two speech recognition engines:
+
+- `VOSK-API <https://github.com/alphacep/vosk-api>`__ (default) - batch recognition, broad language model support.
+- `sherpa-onnx <https://github.com/k2-fsa/sherpa-onnx>`__ - real-time streaming recognition with NVIDIA GPU acceleration.
 
 Simple
    This is a single file Python script with minimal dependencies.
@@ -65,6 +70,20 @@ Suspend/Resume
    While suspended all data is kept in memory and the process is stopped.
    Audio recording is stopped and restarted on resume.
 
+Sherpa-onnx Streaming Engine
+   An alternative engine using `sherpa-onnx <https://github.com/k2-fsa/sherpa-onnx>`__
+   for real-time streaming speech recognition.
+   Supports NVIDIA GPU acceleration via CUDA and bilingual (e.g. Chinese-English) models.
+   Text appears progressively as you speak.
+
+   .. code-block:: sh
+
+      nerd-dictation begin --engine=sherpa --vosk-model-dir=/path/to/sherpa-onnx-model
+
+Wayland Clipboard Injection
+   When using ``ydotool`` on Wayland with an input method (e.g. Fcitx5),
+   text is injected via clipboard (``wl-copy`` + Ctrl+V) to avoid input method interception.
+
 See ``nerd-dictation begin --help`` for details on how to access these options.
 
 
@@ -72,9 +91,15 @@ Dependencies
 ============
 
 - Python 3.6 (or newer).
-- The VOSK-API.
-- An audio recording utility (``parec`` by default).
+- The VOSK-API (for the default VOSK engine).
+- An audio recording utility (``parec`` by default, not needed for sherpa-onnx which records directly).
 - An input simulation utility (``xdotool`` by default).
+
+For the sherpa-onnx engine (optional):
+
+- ``sherpa-onnx`` Python package (``pip install sherpa-onnx`` for CPU, or the ``+cuda`` build for GPU).
+- ``sounddevice`` Python package.
+- ``numpy`` Python package.
 
 
 Audio Recording Utilities
@@ -413,5 +438,5 @@ Further Work
 ============
 
 - Support a general solution to capitalize words (proper nouns for example).
-- Possibly other speech to text engines *(only if they provide some significant benefits)*.
 - Possibly support Windows & macOS.
+- Verify and document sherpa-onnx GPU (CUDA) acceleration setup.

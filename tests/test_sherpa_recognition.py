@@ -14,7 +14,7 @@ MODEL_DIR = os.path.join(
 
 
 def create_recognizer():
-    return sherpa_onnx.OnlineRecognizer.from_transducer(
+    kwargs = dict(
         encoder=os.path.join(MODEL_DIR, "encoder-epoch-99-avg-1.int8.onnx"),
         decoder=os.path.join(MODEL_DIR, "decoder-epoch-99-avg-1.onnx"),
         joiner=os.path.join(MODEL_DIR, "joiner-epoch-99-avg-1.int8.onnx"),
@@ -26,8 +26,14 @@ def create_recognizer():
         rule1_min_trailing_silence=2.4,
         rule2_min_trailing_silence=1.2,
         rule3_min_utterance_length=300,
-        provider="cuda",
     )
+    for provider in ("cuda", "cpu"):
+        kwargs["provider"] = provider
+        try:
+            return sherpa_onnx.OnlineRecognizer.from_transducer(**kwargs)
+        except RuntimeError:
+            if provider == "cpu":
+                raise
 
 
 def recognize_wav(recognizer, wav_path):

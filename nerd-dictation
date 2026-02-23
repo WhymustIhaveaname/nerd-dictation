@@ -190,9 +190,8 @@ def simulate_typing_with_ydotool(delete_prev_chars: int, text: str) -> None:
             ]
         )
 
-    import subprocess as _sp, time as _time
-    _sp.run(["wl-copy", "--", text], check=True)
-    _time.sleep(0.03)
+    subprocess.run(["wl-copy", "--", text], check=True)
+    time.sleep(0.03)
     run_command_or_exit_on_failure(
         [cmd, "key", "--key-delay", "0", "29:1", "47:1", "47:0", "29:0"]
     )
@@ -1228,14 +1227,13 @@ def text_from_vosk_pipe(
                 if json_text != timeout_text_prev:
                     timeout_text_prev = json_text
                     timeout_time_prev = time.time()
-                elif time.time() - timeout_time_prev > timeout:
-                    if code == 0:
-                        if progressive_continuous:
-                            os.kill(os.getpid(), signal.SIGUSR1)
-                            timeout_text_prev = ""
-                            timeout_time_prev = time.time()
-                        else:
-                            code = 1
+                elif time.time() - timeout_time_prev > timeout and code == 0:
+                    if progressive_continuous:
+                        os.kill(os.getpid(), signal.SIGUSR1)
+                        timeout_text_prev = ""
+                        timeout_time_prev = time.time()
+                    else:
+                        code = 1
 
     # Close the recording process.
     if has_ps:
@@ -1274,6 +1272,7 @@ def text_from_sherpa_pipe(
     suspend_on_start: bool = False,
     verbose: int = 0,
 ) -> bool:
+    # lazy import: optional deps, moving to top would crash vosk-only usage
     from types import FrameType
     import numpy as np
     import sherpa_onnx
@@ -1467,14 +1466,13 @@ def text_from_sherpa_pipe(
             if result != timeout_text_prev:
                 timeout_text_prev = result
                 timeout_time_prev = time.time()
-            elif time.time() - timeout_time_prev > timeout:
-                if code == 0:
-                    if progressive_continuous:
-                        os.kill(os.getpid(), signal.SIGUSR1)
-                        timeout_text_prev = ""
-                        timeout_time_prev = time.time()
-                    else:
-                        code = 1
+            elif time.time() - timeout_time_prev > timeout and code == 0:
+                if progressive_continuous:
+                    os.kill(os.getpid(), signal.SIGUSR1)
+                    timeout_text_prev = ""
+                    timeout_time_prev = time.time()
+                else:
+                    code = 1
 
     if has_recording:
         recording_stop()
