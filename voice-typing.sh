@@ -5,7 +5,7 @@
 # Auto-suspends after 2s silence (model stays in memory).
 export YDOTOOL_SOCKET="/run/user/$(id -u)/.ydotool_socket"
 NERD_DICTATION="$HOME/Codes/VoiceTyping/nerd-dictation/nerd-dictation"
-MODEL_DIR="$HOME/Codes/VoiceTyping/vosk-models/sherpa-onnx-streaming-zipformer-small-bilingual-zh-en-2023-02-16"
+MODEL_DIR="$HOME/Codes/VoiceTyping/vosk-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"
 
 PID=$(pgrep -f "nerd-dictation begin" | head -1)
 

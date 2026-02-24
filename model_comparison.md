@@ -1,4 +1,4 @@
-# Model Comparison – 2026-02-23
+# Model Comparison – 2026-02-24
 
 ## Setup
 
@@ -30,27 +30,26 @@ Before trusting the metric, we manually verified CER against human perception on
 ## Results
 
 ```
-                          vosk-small        vosk-large       sherpa-small
-wav                       CER    time      CER    time      CER    time
-------------------------------------------------------------------------
-zh_slow.wav               32%    5.9s       2%   13.3s       9%    2.6s
-zh_normal.wav             59%    6.6s       7%   15.2s      11%    2.4s
-en_slow.wav              100%    4.7s     100%   15.7s      52%    2.4s
-en_normal.wav            100%    1.7s     100%   11.9s     100%    2.3s
-zh_en_lite_slow.wav       73%    6.7s      44%   15.4s      35%    2.4s
-zh_en_lite_normal.wav     96%    2.7s      67%   13.6s      42%    2.3s
-zh_en_heavy_slow.wav      85%    6.5s      75%   15.0s      60%    3.2s
-zh_en_heavy_normal.wav    97%    3.3s      96%   15.5s      63%    3.1s
-------------------------------------------------------------------------
-AVG CER (lower=better)    80%              61%              46%
-TOT time                       38.1s            115.6s            20.7s
+                          vosk-small        vosk-large       sherpa-small      sherpa-large
+wav                       CER    time      CER    time      CER    time      CER    time
+------------------------------------------------------------------------------------------
+zh_slow.wav               32%    8.6s       2%   19.1s       9%    2.3s       9%    3.8s
+zh_normal.wav             59%    9.8s       7%   21.0s      11%    2.3s       7%    3.7s
+en_slow.wav              100%    7.0s     100%   21.1s      52%    2.2s      47%    3.6s
+en_normal.wav            100%    2.5s     100%   16.0s     100%    2.0s      93%    3.2s
+zh_en_lite_slow.wav       73%    8.6s      44%   21.4s      35%    2.2s      15%    3.6s
+zh_en_lite_normal.wav     96%    4.0s      67%   18.4s      42%    2.1s      40%    3.2s
+zh_en_heavy_slow.wav      85%    9.9s      75%   15.0s      60%    2.2s      49%    3.6s
+zh_en_heavy_normal.wav    97%    5.1s      96%   13.2s      63%    2.1s      54%    3.4s
+------------------------------------------------------------------------------------------
+AVG CER (lower=better)    80%              61%              46%              39%
+TOT time                       55.5s            145.2s            17.4s            28.1s
 ```
 
 ## Analysis
 
-- **Overall**: sherpa-small (46%) > vosk-large (61%) > vosk-small (80%)
-- **Pure Chinese**: vosk-large 最优 (2%/7%), sherpa-small 接近 (9%/11%)
-- **Pure English**: 均较差, sherpa-small 慢速勉强可用 (52%)
-- **Mixed zh-en**: 差距最大, sherpa-small 远优于 vosk, 尤其正常语速
-- **Speed**: sherpa-small 5-6x faster than vosk-large
-
+- **Overall**: sherpa-large (39%) > sherpa-small (46%) > vosk-large (61%) > vosk-small (80%)
+- **Pure Chinese**: vosk-large 和 sherpa-large 并列最优 (2%/7% vs 9%/7%)
+- **Pure English**: 均较差, sherpa-large 略好 (47%/93%), 首次在正常语速下有输出
+- **Mixed zh-en**: sherpa-large 明显领先, 尤其 lite 慢速 (15% vs 35%), heavy 慢速 (49% vs 60%)
+- **Speed**: sherpa-large (28s) 仍远快于 vosk-large (145s), 仅比 sherpa-small (17s) 慢 60%

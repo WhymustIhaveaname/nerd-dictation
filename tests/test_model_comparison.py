@@ -57,6 +57,7 @@ MODELS = [
     ("vosk-small", os.path.join(MODELS_DIR, "vosk-model-small-cn-0.22"), recognize_vosk),
     ("vosk-large", os.path.join(MODELS_DIR, "vosk-model-cn-0.22"), recognize_vosk),
     ("sherpa-small", os.path.join(MODELS_DIR, "sherpa-onnx-streaming-zipformer-small-bilingual-zh-en-2023-02-16"), recognize_sherpa),
+    ("sherpa-large", os.path.join(MODELS_DIR, "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"), recognize_sherpa),
 ]
 
 
