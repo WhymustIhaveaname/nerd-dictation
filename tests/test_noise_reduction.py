@@ -32,8 +32,12 @@ denoise_audio = _mod.denoise_audio
 # ---------------------------------------------------------------------------
 # Test fixtures
 # ---------------------------------------------------------------------------
-_WAV_PATH = os.path.join(os.path.dirname(__file__), "test_wavs", "zh_test_raw.wav")
-_SAMPLE_RATE = 16000  # matches zh_test_raw.wav
+_WAV_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "vosk-models",
+    "sherpa-onnx-streaming-zipformer-small-bilingual-zh-en-2023-02-16",
+    "test_wavs", "0.wav",
+)
+_SAMPLE_RATE = 16000
 
 
 def _load_wav_as_int16_bytes() -> bytes:

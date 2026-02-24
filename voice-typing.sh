@@ -9,24 +9,29 @@ MODEL_DIR="$HOME/Codes/VoiceTyping/vosk-models/sherpa-onnx-streaming-zipformer-b
 
 PID=$(pgrep -f "nerd-dictation begin" | head -1)
 
-# Kill stale process whose audio child (parec) became zombie after system suspend
+# Kill stale process whose audio child became zombie after system suspend
 if [ -n "$PID" ] && ps --ppid "$PID" -o stat= 2>/dev/null | grep -q Z; then
     kill -9 "$PID" 2>/dev/null
     PID=""
+    notify-send -t 3000 -u critical "Voice Typing" "Zombie process killed, restarting..."
 fi
 
 if [ -z "$PID" ]; then
+    notify-send -t 3000 -u critical "Voice Typing" "Loading model..."
     "$NERD_DICTATION" begin \
         --engine=sherpa \
         --vosk-model-dir="$MODEL_DIR" \
         --simulate-input-tool=YDOTOOL \
         --continuous \
-        --timeout=2 &
+        --noise-reduction=1 \
+        --timeout=3 &
 else
     STATE=$(awk '/^State:/{print $2}' /proc/"$PID"/status 2>/dev/null)
     if [ "$STATE" = "T" ]; then
         kill -CONT "$PID"
+        notify-send -t 1500 -u low "Voice Typing" "Recording"
     else
         kill -USR1 "$PID"
+        notify-send -t 1500 -u low "Voice Typing" "Suspended"
     fi
 fi

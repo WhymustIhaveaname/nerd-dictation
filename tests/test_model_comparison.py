@@ -34,13 +34,18 @@ def cer(result, truth):
     )
 
 
-def recognize_vosk(model_path, wav_path):
+def load_vosk(model_path):
     # lazy import: vosk is optional, sherpa-only users won't have it
     import vosk
     vosk.SetLogLevel(-1)
-    model = vosk.Model(model_path)
+    return vosk.Model(model_path)
+
+
+def recognize_vosk(model, wav_path):
     samples, sample_rate = read_wav_samples(wav_path)
     raw_bytes = (samples * 32768).astype(np.int16).tobytes()
+    rec = model.__class__.__module__  # need vosk module for KaldiRecognizer
+    import vosk
     rec = vosk.KaldiRecognizer(model, sample_rate)
     chunk_size = int(0.1 * sample_rate) * 2
     for i in range(0, len(raw_bytes), chunk_size):
@@ -48,27 +53,31 @@ def recognize_vosk(model_path, wav_path):
     return json.loads(rec.FinalResult())["text"]
 
 
-def recognize_sherpa(model_path, wav_path):
-    recognizer = create_sherpa_recognizer(model_path)
-    return sherpa_recognize_wav(recognizer, wav_path)
+def load_sherpa(model_path):
+    return create_sherpa_recognizer(model_path)
+
+
+def recognize_sherpa(model, wav_path):
+    return sherpa_recognize_wav(model, wav_path)
 
 
 MODELS = [
-    ("vosk-small", os.path.join(MODELS_DIR, "vosk-model-small-cn-0.22"), recognize_vosk),
-    ("vosk-large", os.path.join(MODELS_DIR, "vosk-model-cn-0.22"), recognize_vosk),
-    ("sherpa-small", os.path.join(MODELS_DIR, "sherpa-onnx-streaming-zipformer-small-bilingual-zh-en-2023-02-16"), recognize_sherpa),
-    ("sherpa-large", os.path.join(MODELS_DIR, "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"), recognize_sherpa),
+    ("vosk-small", os.path.join(MODELS_DIR, "vosk-model-small-cn-0.22"), load_vosk, recognize_vosk),
+    ("vosk-large", os.path.join(MODELS_DIR, "vosk-model-cn-0.22"), load_vosk, recognize_vosk),
+    ("sherpa-small", os.path.join(MODELS_DIR, "sherpa-onnx-streaming-zipformer-small-bilingual-zh-en-2023-02-16"), load_sherpa, recognize_sherpa),
+    ("sherpa-large", os.path.join(MODELS_DIR, "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"), load_sherpa, recognize_sherpa),
 ]
 
 
 def main():
     results = {}
-    for model_name, model_path, recognize_fn in MODELS:
+    for model_name, model_path, load_fn, recognize_fn in MODELS:
         if not os.path.isdir(model_path):
             print(f"[SKIP] {model_name}: {model_path} not found")
             continue
         print(f"\n{'='*60}")
-        print(f"  Model: {model_name}")
+        print(f"  Model: {model_name} (loading...)")
+        model = load_fn(model_path)
         print(f"{'='*60}")
         results[model_name] = {}
         for entry in MANIFEST:
@@ -78,7 +87,7 @@ def main():
                 print(f"  [SKIP] {wav_file}")
                 continue
             t0 = time.time()
-            text = recognize_fn(model_path, wav_path)
+            text = recognize_fn(model, wav_path)
             elapsed = time.time() - t0
             err = cer(text, entry["text"])
             results[model_name][wav_file] = (text, err, elapsed)
@@ -89,7 +98,7 @@ def main():
     print("  SUMMARY")
     print(f"{'='*80}")
     header = f"{'wav':<30s}"
-    model_names = [n for n, _, _ in MODELS if n in results]
+    model_names = [n for n, _, _, _ in MODELS if n in results]
     for mn in model_names:
         header += f"  {mn:>14s}"
     print(header)
