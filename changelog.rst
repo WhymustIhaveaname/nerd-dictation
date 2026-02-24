@@ -3,6 +3,7 @@
 Changelog
 #########
 
+- 2026/02/24: Add ``--noise-reduction`` option for optional background noise reduction before speech recognition (requires ``noisereduce``).
 - 2023/02/09: Add ``--vosk-grammar-file`` allowing a restricted set of words.
 - 2023/02/09: Use ``SIGHUB`` to reload the user configuration at run-time.
 - 2023/02/02: Add ``--suspend-on-start`` argument to the ``begin`` sub-command.

@@ -80,6 +80,19 @@ Sherpa-onnx Streaming Engine
 
       nerd-dictation begin --engine=sherpa --vosk-model-dir=/path/to/sherpa-onnx-model
 
+Noise Reduction
+   Optional pre-processing step that reduces steady background noise (fans, AC units, etc.)
+   before audio is passed to the speech recognition engine.
+   Useful in noisy environments to improve transcription accuracy.
+
+   .. code-block:: sh
+
+      nerd-dictation begin --noise-reduction=1   # light
+      nerd-dictation begin --noise-reduction=2   # heavy
+
+   Requires the ``noisereduce`` Python package (``pip install noisereduce``).
+   Level ``0`` (default) disables the feature entirely and has no extra dependency.
+
 Wayland Clipboard Injection
    When using ``ydotool`` on Wayland with an input method (e.g. Fcitx5),
    text is injected via clipboard (``wl-copy`` + Ctrl+V) to avoid input method interception.
@@ -100,6 +113,11 @@ For the sherpa-onnx engine (optional):
 - ``sherpa-onnx`` Python package (``pip install sherpa-onnx`` for CPU, or the ``+cuda`` build for GPU).
 - ``sounddevice`` Python package.
 - ``numpy`` Python package.
+
+For noise reduction (optional):
+
+- ``noisereduce`` Python package (``pip install noisereduce``).
+  Only required when ``--noise-reduction`` is set to a value greater than ``0``.
 
 
 Audio Recording Utilities
@@ -259,6 +277,7 @@ usage::
                             [--numbers-use-separator]
                             [--numbers-min-value NUMBERS_MIN_VALUE]
                             [--numbers-no-suffix] [--input INPUT_METHOD]
+                            [--noise-reduction LEVEL]
                             [--output OUTPUT_METHOD]
                             [--simulate-input-tool SIMULATE_INPUT_TOOL]
                             [--verbose VERBOSE] [- ...]
@@ -320,6 +339,14 @@ options:
                         - ``SOX`` (external command)
                           For help on setting up sox, see ``readme-sox.rst`` in the nerd-dictation repository.
                         - ``PW-CAT`` (external command)
+  --noise-reduction LEVEL
+                        Noise reduction level applied to audio before speech recognition (default: 0).
+
+                        - ``0`` disabled (default, no extra dependency required).
+                        - ``1`` light: reduce steady background noise (fans, AC units).
+                        - ``2`` heavy: more aggressive reduction for noisy environments.
+
+                        Requires the ``noisereduce`` Python package when LEVEL > 0.
   --output OUTPUT_METHOD
                         Method used to at put the result of speech to text.
 

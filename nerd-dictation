@@ -849,6 +849,53 @@ def process_text(
 
 
 # -----------------------------------------------------------------------------
+# Audio Processing
+#
+
+
+def denoise_audio(data: bytes, sample_rate: int, level: int, dtype: str = "int16") -> bytes:
+    """
+    Apply noise reduction to raw audio bytes and return processed bytes.
+
+    :arg data: Raw audio bytes.
+    :arg sample_rate: Audio sample rate in Hz.
+    :arg level: Noise reduction aggressiveness. 0 = disabled, 1 = light, 2 = heavy.
+    :arg dtype: Sample format of `data`. Either ``"int16"`` (VOSK path) or
+        ``"float32"`` (sherpa path).
+    :return: Denoised audio as bytes in the same dtype as the input.
+
+    .. note::
+        ``noisereduce`` is imported here rather than at the top of the file for
+        two reasons: it is an optional dependency (not needed when ``level=0``,
+        the default), and this matches the lazy-import pattern used throughout
+        this file for heavy optional dependencies such as ``vosk`` and
+        ``sherpa_onnx``, which avoids slowing down startup or crashing users
+        who have not installed the package.
+    """
+    if level == 0:
+        return data
+
+    # noisereduce is an optional dependency; imported lazily - see docstring.
+    import noisereduce as nr  # type: ignore
+    import numpy as np
+
+    prop_decrease = 0.5 if level == 1 else 1.0
+
+    if dtype == "int16":
+        samples = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+    else:  # float32
+        # frombuffer returns a read-only view; copy() is required before mutation.
+        samples = np.frombuffer(data, dtype=np.float32).copy()
+
+    denoised = nr.reduce_noise(y=samples, sr=sample_rate, prop_decrease=prop_decrease, stationary=True)
+
+    if dtype == "int16":
+        return (denoised * 32768.0).astype(np.int16).tobytes()
+    else:
+        return denoised.astype(np.float32).tobytes()
+
+
+# -----------------------------------------------------------------------------
 # Text from VOSK
 #
 
@@ -930,6 +977,7 @@ def text_from_vosk_pipe(
     suspend_on_start: bool = False,
     verbose: int = 0,
     vosk_grammar_file: str = "",
+    noise_reduction: int = 0,
 ) -> bool:
     # Delay some imports until recording has started to avoid minor delays.
     import json
@@ -1214,6 +1262,8 @@ def text_from_vosk_pipe(
             continue
 
         if data:
+            if noise_reduction > 0:
+                data = denoise_audio(data, sample_rate, noise_reduction)
             ok = rec.AcceptWaveform(data)
             if ok:
                 json_text_partial_prev = ""
@@ -1271,6 +1321,7 @@ def text_from_sherpa_pipe(
     progressive_continuous: bool,
     suspend_on_start: bool = False,
     verbose: int = 0,
+    noise_reduction: int = 0,
 ) -> bool:
     # lazy import: optional deps, moving to top would crash vosk-only usage
     from types import FrameType
@@ -1457,6 +1508,8 @@ def text_from_sherpa_pipe(
             continue
 
         data = b"".join(chunks)
+        if noise_reduction > 0:
+            data = denoise_audio(data, sample_rate, noise_reduction, dtype="float32")
         samples = np.frombuffer(data, dtype=np.float32)
         stream.accept_waveform(sample_rate, samples)
 
@@ -1528,6 +1581,7 @@ def main_begin(
     suspend_on_start: bool = False,
     verbose: int = 0,
     vosk_grammar_file: str = "",
+    noise_reduction: int = 0,
 ) -> None:
     """
     Initialize audio recording, then full text to speech conversion can take place.
@@ -1692,6 +1746,7 @@ def main_begin(
             handle_fn=handle_fn,
             suspend_on_start=suspend_on_start,
             verbose=verbose,
+            noise_reduction=noise_reduction,
         )
     else:
         found_any = text_from_vosk_pipe(
@@ -1709,6 +1764,7 @@ def main_begin(
             suspend_on_start=suspend_on_start,
             verbose=verbose,
             vosk_grammar_file=vosk_grammar_file,
+            noise_reduction=noise_reduction,
         )
 
     if not found_any:
@@ -2042,6 +2098,25 @@ def argparse_create_begin(subparsers: "argparse._SubParsersAction[argparse.Argum
     )
 
     subparse.add_argument(
+        "--noise-reduction",
+        dest="noise_reduction",
+        default=0,
+        type=int,
+        choices=(0, 1, 2),
+        metavar="LEVEL",
+        help=(
+            "Noise reduction level applied to audio before speech recognition (default: 0).\n"
+            "\n"
+            "- ``0`` disabled (default, no extra dependency required).\n"
+            "- ``1`` light: reduce steady background noise (fans, AC units).\n"
+            "- ``2`` heavy: more aggressive reduction for noisy environments.\n"
+            "\n"
+            "Requires the ``noisereduce`` Python package when LEVEL > 0."
+        ),
+        required=False,
+    )
+
+    subparse.add_argument(
         "--output",
         dest="output",
         default="SIMULATE_INPUT",
@@ -2127,6 +2202,7 @@ def argparse_create_begin(subparsers: "argparse._SubParsersAction[argparse.Argum
             suspend_on_start=args.suspend_on_start,
             verbose=args.verbose,
             vosk_grammar_file=args.vosk_grammar_file,
+            noise_reduction=args.noise_reduction,
         ),
     )
 
