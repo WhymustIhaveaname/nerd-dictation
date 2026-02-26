@@ -853,6 +853,24 @@ def process_text(
 #
 
 
+def debug_save_audio_session(
+    debug_audio_dir: str,
+    debug_audio_buf: List[bytes],
+    sample_rate: int,
+    sample_width: int,
+) -> None:
+    if not debug_audio_dir or not debug_audio_buf:
+        return
+    import wave as _wave
+    wav_name = time.strftime("%m%d-%H%M%S") + ".wav"
+    with _wave.open(os.path.join(debug_audio_dir, wav_name), "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(sample_width)
+        wf.setframerate(sample_rate)
+        wf.writeframes(b"".join(debug_audio_buf))
+    debug_audio_buf.clear()
+
+
 def denoise_audio(data: bytes, sample_rate: int, level: int, dtype: str = "int16") -> bytes:
     """
     Apply noise reduction to raw audio bytes and return processed bytes.
@@ -978,6 +996,7 @@ def text_from_vosk_pipe(
     verbose: int = 0,
     vosk_grammar_file: str = "",
     noise_reduction: int = 0,
+    debug_audio_dir: str = "",
 ) -> bool:
     # Delay some imports until recording has started to avoid minor delays.
     import json
@@ -1025,6 +1044,11 @@ def text_from_vosk_pipe(
     # 1mb
     block_size = 1_048_576
 
+    if debug_audio_dir:
+        os.makedirs(debug_audio_dir, exist_ok=True)
+        if verbose >= 1:
+            sys.stderr.write("Debug audio dir: {:s}\n".format(debug_audio_dir))
+
     use_timeout = timeout != 0.0
     if use_timeout:
         timeout_text_prev = ""
@@ -1033,6 +1057,8 @@ def text_from_vosk_pipe(
     # Collect the output used when time-out is enabled.
     if not (progressive and progressive_continuous):
         text_list: List[str] = []
+
+    debug_audio_buf: List[bytes] = []
 
     # Set true if handle has been called.
     handled_any = False
@@ -1152,6 +1178,7 @@ def text_from_vosk_pipe(
 
         # Clear the buffer:
         handle_fn_suspended()
+        debug_save_audio_session(debug_audio_dir, debug_audio_buf, sample_rate, 2)
 
         nonlocal verbose
         if verbose >= 1:
@@ -1262,6 +1289,8 @@ def text_from_vosk_pipe(
             continue
 
         if data:
+            if debug_audio_dir:
+                debug_audio_buf.append(data)
             if noise_reduction > 0:
                 data = denoise_audio(data, sample_rate, noise_reduction)
             ok = rec.AcceptWaveform(data)
@@ -1295,6 +1324,8 @@ def text_from_vosk_pipe(
         # Support setting up input simulation state.
         handle_fn(SIMULATE_INPUT_CODE_COMMAND, "TEARDOWN")
 
+    debug_save_audio_session(debug_audio_dir, debug_audio_buf, sample_rate, 2)
+
     if code == -1:
         sys.stderr.write("Text input canceled!\n")
         sys.exit(0)
@@ -1322,6 +1353,9 @@ def text_from_sherpa_pipe(
     suspend_on_start: bool = False,
     verbose: int = 0,
     noise_reduction: int = 0,
+    debug_audio_dir: str = "",
+    hotwords_file: str = "",
+    hotwords_score: float = 0.5,
 ) -> bool:
     # lazy import: optional deps, moving to top would crash vosk-only usage
     from types import FrameType
@@ -1348,6 +1382,10 @@ def text_from_sherpa_pipe(
         rule2_min_trailing_silence=1.2,
         rule3_min_utterance_length=300,
     )
+    if hotwords_file:
+        model_kwargs["decoding_method"] = "modified_beam_search"
+        model_kwargs["hotwords_file"] = hotwords_file
+        model_kwargs["hotwords_score"] = hotwords_score
     for provider in ("cuda", "cpu"):
         model_kwargs["provider"] = provider
         # try-catch approved: CUDA libs may be missing, fall back to CPU
@@ -1362,6 +1400,11 @@ def text_from_sherpa_pipe(
 
     if verbose >= 1:
         sys.stderr.write("Model loaded.\n")
+
+    if debug_audio_dir:
+        os.makedirs(debug_audio_dir, exist_ok=True)
+        if verbose >= 1:
+            sys.stderr.write("Debug audio dir: {:s}\n".format(debug_audio_dir))
 
     audio_queue: "queue.Queue[Optional[bytes]]" = queue.Queue()
     stream = recognizer.create_stream()
@@ -1386,6 +1429,7 @@ def text_from_sherpa_pipe(
             sd_stream = None
 
     has_recording = False
+    debug_audio_buf: List[bytes] = []
     if not suspend_on_start:
         recording_start()
         has_recording = True
@@ -1443,6 +1487,7 @@ def text_from_sherpa_pipe(
             handle_fn_wrapper(result, False)
         recognizer.reset(stream)
         handle_fn_suspended()
+        debug_save_audio_session(debug_audio_dir, debug_audio_buf, sample_rate, 4)
         if verbose >= 1:
             sys.stderr.write("Recording suspended.\n")
         if has_recording:
@@ -1508,6 +1553,8 @@ def text_from_sherpa_pipe(
             continue
 
         data = b"".join(chunks)
+        if debug_audio_dir:
+            debug_audio_buf.append(data)
         if noise_reduction > 0:
             data = denoise_audio(data, sample_rate, noise_reduction, dtype="float32")
         samples = np.frombuffer(data, dtype=np.float32)
@@ -1541,6 +1588,8 @@ def text_from_sherpa_pipe(
         recording_stop()
         has_recording = False
         handle_fn(SIMULATE_INPUT_CODE_COMMAND, "TEARDOWN")
+
+    debug_save_audio_session(debug_audio_dir, debug_audio_buf, sample_rate, 4)
 
     if code == -1:
         sys.stderr.write("Text input canceled!\n")
@@ -1582,6 +1631,9 @@ def main_begin(
     verbose: int = 0,
     vosk_grammar_file: str = "",
     noise_reduction: int = 0,
+    debug_audio_dir: str = "",
+    hotwords_file: str = "",
+    hotwords_score: float = 0.5,
 ) -> None:
     """
     Initialize audio recording, then full text to speech conversion can take place.
@@ -1747,6 +1799,9 @@ def main_begin(
             suspend_on_start=suspend_on_start,
             verbose=verbose,
             noise_reduction=noise_reduction,
+            debug_audio_dir=debug_audio_dir,
+            hotwords_file=hotwords_file,
+            hotwords_score=hotwords_score,
         )
     else:
         found_any = text_from_vosk_pipe(
@@ -1765,6 +1820,7 @@ def main_begin(
             verbose=verbose,
             vosk_grammar_file=vosk_grammar_file,
             noise_reduction=noise_reduction,
+            debug_audio_dir=debug_audio_dir,
         )
 
     if not found_any:
@@ -2117,6 +2173,45 @@ def argparse_create_begin(subparsers: "argparse._SubParsersAction[argparse.Argum
     )
 
     subparse.add_argument(
+        "--hotwords-file",
+        dest="hotwords_file",
+        default="",
+        metavar="FILE",
+        help=(
+            "Path to a hotwords file for contextual biasing (sherpa engine only).\n"
+            "Each line contains space-separated BPE tokens and an optional boost score.\n"
+            "When set, switches decoding to ``modified_beam_search``.\n"
+            "Default: empty (disabled, uses ``greedy_search``)."
+        ),
+        required=False,
+    )
+
+    subparse.add_argument(
+        "--hotwords-score",
+        dest="hotwords_score",
+        default=0.5,
+        type=float,
+        metavar="SCORE",
+        help=(
+            "Boosting score for hotwords (default: 1.5).\n"
+            "Higher values make hotwords more likely to be recognized."
+        ),
+        required=False,
+    )
+
+    subparse.add_argument(
+        "--debug-audio-dir",
+        dest="debug_audio_dir",
+        default="",
+        metavar="DIR",
+        help=(
+            "Save each raw audio chunk as a numbered WAV file in DIR for debugging.\n"
+            "Disabled by default (empty string)."
+        ),
+        required=False,
+    )
+
+    subparse.add_argument(
         "--output",
         dest="output",
         default="SIMULATE_INPUT",
@@ -2203,6 +2298,9 @@ def argparse_create_begin(subparsers: "argparse._SubParsersAction[argparse.Argum
             verbose=args.verbose,
             vosk_grammar_file=args.vosk_grammar_file,
             noise_reduction=args.noise_reduction,
+            debug_audio_dir=args.debug_audio_dir,
+            hotwords_file=args.hotwords_file,
+            hotwords_score=args.hotwords_score,
         ),
     )
 

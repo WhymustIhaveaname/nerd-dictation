@@ -77,3 +77,23 @@ AVG CER / TOT time        39%   6.5s     39%   7.7s     60%   6.8s
 - **Level 1** (light): 平均 CER 持平 (39%), 个别样本小幅改善 (zh_slow 9%→5%, en_slow 47%→42%), 耗时增加 ~18% (6.5s→7.7s)
 - **Level 2** (heavy): CER 严重恶化 (39%→60%), 过度降噪破坏语音信号
 - **结论**: Level 1 有轻微收益且开销可接受, 默认启用; Level 2 不可用
+
+## Hotwords Effect (sherpa-large) – 2026-02-27
+
+Using hotwords generated from Fcitx5 user dictionary (3077 words).
+Sweep over boost score values (file score and `hotwords_score` set to same value):
+
+```
+                          zh_slow  zh_norm  en_slow  en_norm  lite_s  lite_n  heavy_s  heavy_n  AVG
+no hotwords                  9%      7%      47%      93%      15%     40%      49%      54%    39%
+score=0.1                    5%      7%      40%      96%      15%     40%      58%      58%    40%
+score=0.5                    5%      7%      40%      96%      13%     40%      54%      58%    39%
+score=1.0                    5%      7%      40%      96%      13%     40%      54%      60%    39%
+score=1.5                    5%      7%      40%      96%      13%     40%      54%      64%    40%
+score=2.0                    5%      9%      41%      96%      13%     40%      54%      64%    40%
+```
+
+- 开 hotwords 后一致改善: zh_slow (9→5%), en_slow (47→40%), lite_slow (15→13%)
+- 一致退化: en_normal (93→96%), zh_en_heavy_normal 随 score 增大持续恶化 (54→58→64%)
+- **score=0.5 最优**: AVG 持平 (39%), 拿到改善同时 heavy 退化最小
+- score≥1.5 heavy 退化明显, score=2.0 连 zh_normal 也开始退化

@@ -13,7 +13,7 @@ MODEL_DIR = os.path.join(
 )
 
 
-def create_recognizer(model_dir=MODEL_DIR):
+def create_recognizer(model_dir=MODEL_DIR, hotwords_file="", hotwords_score=1.5):
     kwargs = dict(
         encoder=os.path.join(model_dir, "encoder-epoch-99-avg-1.int8.onnx"),
         decoder=os.path.join(model_dir, "decoder-epoch-99-avg-1.onnx"),
@@ -27,8 +27,13 @@ def create_recognizer(model_dir=MODEL_DIR):
         rule2_min_trailing_silence=1.2,
         rule3_min_utterance_length=300,
     )
+    if hotwords_file:
+        kwargs["decoding_method"] = "modified_beam_search"
+        kwargs["hotwords_file"] = hotwords_file
+        kwargs["hotwords_score"] = hotwords_score
     for provider in ("cuda", "cpu"):
         kwargs["provider"] = provider
+        # try-catch approved: GPU provider may fail, fall back to CPU
         try:
             return sherpa_onnx.OnlineRecognizer.from_transducer(**kwargs)
         except RuntimeError:

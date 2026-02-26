@@ -6,6 +6,7 @@
 export YDOTOOL_SOCKET="/run/user/$(id -u)/.ydotool_socket"
 NERD_DICTATION="$HOME/Codes/VoiceTyping/nerd-dictation/nerd-dictation"
 MODEL_DIR="$HOME/Codes/VoiceTyping/vosk-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"
+HOTWORDS="$HOME/Codes/VoiceTyping/nerd-dictation/hotwords.txt"
 
 PID=$(pgrep -f "nerd-dictation begin" | head -1)
 
@@ -23,8 +24,10 @@ if [ -z "$PID" ]; then
         --vosk-model-dir="$MODEL_DIR" \
         --simulate-input-tool=YDOTOOL \
         --continuous \
-        --noise-reduction=1 \
-        --timeout=3 &
+        --noise-reduction=0 \
+        --timeout=3 \
+        --debug-audio-dir="$HOME/Codes/VoiceTyping/nerd-dictation/debug_audio" \
+        --hotwords-file="$HOTWORDS" &
 else
     STATE=$(awk '/^State:/{print $2}' /proc/"$PID"/status 2>/dev/null)
     if [ "$STATE" = "T" ]; then
