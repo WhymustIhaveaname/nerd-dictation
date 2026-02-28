@@ -24,7 +24,7 @@ if [ -z "$PID" ]; then
     "$NERD_DICTATION" begin \
         --engine=sherpa \
         --vosk-model-dir="$MODEL_DIR" \
-        --simulate-input-tool=YDOTOOL \
+        --simulate-input-tool=YDOTOOL_CLIPBOARD \
         --continuous \
         --noise-reduction=0 \
         --timeout=3 \

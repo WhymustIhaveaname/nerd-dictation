@@ -5,12 +5,7 @@ Nerd Dictation
 *Offline Speech to Text for Desktop Linux.* - See `demo video <https://www.youtube.com/watch?v=T7sR-4DFhpQ>`__.
 
 This is a utility that provides simple access speech to text for using in Linux
-without being tied to a desktop environment.
-
-It supports two speech recognition engines:
-
-- `VOSK-API <https://github.com/alphacep/vosk-api>`__ (default) - batch recognition, broad language model support.
-- `sherpa-onnx <https://github.com/k2-fsa/sherpa-onnx>`__ - real-time streaming recognition with NVIDIA GPU acceleration.
+without being tied to a desktop environment, using the excellent `VOSK-API <https://github.com/alphacep/vosk-api>`__.
 
 Simple
    This is a single file Python script with minimal dependencies.
@@ -70,33 +65,6 @@ Suspend/Resume
    While suspended all data is kept in memory and the process is stopped.
    Audio recording is stopped and restarted on resume.
 
-Sherpa-onnx Streaming Engine
-   An alternative engine using `sherpa-onnx <https://github.com/k2-fsa/sherpa-onnx>`__
-   for real-time streaming speech recognition.
-   Supports NVIDIA GPU acceleration via CUDA and bilingual (e.g. Chinese-English) models.
-   Text appears progressively as you speak.
-
-   .. code-block:: sh
-
-      nerd-dictation begin --engine=sherpa --vosk-model-dir=/path/to/sherpa-onnx-model
-
-Noise Reduction
-   Optional pre-processing step that reduces steady background noise (fans, AC units, etc.)
-   before audio is passed to the speech recognition engine.
-   Useful in noisy environments to improve transcription accuracy.
-
-   .. code-block:: sh
-
-      nerd-dictation begin --noise-reduction=1   # light
-      nerd-dictation begin --noise-reduction=2   # heavy
-
-   Requires the ``noisereduce`` Python package (``pip install noisereduce``).
-   Level ``0`` (default) disables the feature entirely and has no extra dependency.
-
-Wayland Clipboard Injection
-   When using ``ydotool`` on Wayland with an input method (e.g. Fcitx5),
-   text is injected via clipboard (``wl-copy`` + Ctrl+V) to avoid input method interception.
-
 See ``nerd-dictation begin --help`` for details on how to access these options.
 
 
@@ -104,20 +72,9 @@ Dependencies
 ============
 
 - Python 3.6 (or newer).
-- The VOSK-API (for the default VOSK engine).
-- An audio recording utility (``parec`` by default, not needed for sherpa-onnx which records directly).
+- The VOSK-API.
+- An audio recording utility (``parec`` by default).
 - An input simulation utility (``xdotool`` by default).
-
-For the sherpa-onnx engine (optional):
-
-- ``sherpa-onnx`` Python package (``pip install sherpa-onnx`` for CPU, or the ``+cuda`` build for GPU).
-- ``sounddevice`` Python package.
-- ``numpy`` Python package.
-
-For noise reduction (optional):
-
-- ``noisereduce`` Python package (``pip install noisereduce``).
-  Only required when ``--noise-reduction`` is set to a value greater than ``0``.
 
 
 Audio Recording Utilities
@@ -175,28 +132,6 @@ To test dictation:
 
    Once this is working properly you may wish to download one of the larger language models for more accurate dictation.
    They are available `here <https://alphacephei.com/vosk/models>`__.
-
-
-Toggle Script (voice-typing.sh)
--------------------------------
-
-A convenience script ``voice-typing.sh`` is included for toggling dictation with a single hotkey.
-It starts nerd-dictation on first press and suspends/resumes on subsequent presses.
-It also detects zombie audio child processes (e.g. after system suspend) and force-restarts.
-
-Edit the ``MODEL_DIR`` and ``--engine`` variables at the top to match your setup, then bind it to a key:
-
-.. code-block:: sh
-
-   # GNOME example (Super+H):
-   CUSTOM_PATH=/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/
-   gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$CUSTOM_PATH']"
-   gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$CUSTOM_PATH \
-       name 'Voice Typing'
-   gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$CUSTOM_PATH \
-       command '/path/to/nerd-dictation/voice-typing.sh'
-   gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:$CUSTOM_PATH \
-       binding '<Super>h'
 
 
 If you prefer to use a package, see: `Packaging <package/readme.rst>`_.
@@ -277,7 +212,6 @@ usage::
                             [--numbers-use-separator]
                             [--numbers-min-value NUMBERS_MIN_VALUE]
                             [--numbers-no-suffix] [--input INPUT_METHOD]
-                            [--noise-reduction LEVEL]
                             [--output OUTPUT_METHOD]
                             [--simulate-input-tool SIMULATE_INPUT_TOOL]
                             [--verbose VERBOSE] [- ...]
@@ -339,14 +273,6 @@ options:
                         - ``SOX`` (external command)
                           For help on setting up sox, see ``readme-sox.rst`` in the nerd-dictation repository.
                         - ``PW-CAT`` (external command)
-  --noise-reduction LEVEL
-                        Noise reduction level applied to audio before speech recognition (default: 0).
-
-                        - ``0`` disabled (default, no extra dependency required).
-                        - ``1`` light: reduce steady background noise (fans, AC units).
-                        - ``2`` heavy: more aggressive reduction for noisy environments.
-
-                        Requires the ``noisereduce`` Python package when LEVEL > 0.
   --output OUTPUT_METHOD
                         Method used to at put the result of speech to text.
 
@@ -487,5 +413,5 @@ Further Work
 ============
 
 - Support a general solution to capitalize words (proper nouns for example).
+- Possibly other speech to text engines *(only if they provide some significant benefits)*.
 - Possibly support Windows & macOS.
-- Verify and document sherpa-onnx GPU (CUDA) acceleration setup.

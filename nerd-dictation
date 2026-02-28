@@ -179,6 +179,12 @@ def simulate_typing_with_ydotool(delete_prev_chars: int, text: str) -> None:
         return
 
     if delete_prev_chars:
+        # ydotool's key subcommand works with int key IDs and key states. 14 is
+        # the linux keycode for the backspace key, and :1 and :0 respectively
+        # stand for "pressed" and "released."
+        #
+        # The key delay is lower than the typing setting because it applies to
+        # each key state change (pressed, released).
         run_command_or_exit_on_failure(
             [
                 cmd,
@@ -190,6 +196,51 @@ def simulate_typing_with_ydotool(delete_prev_chars: int, text: str) -> None:
             ]
         )
 
+    # The low delay value makes typing fast, making the output much snappier
+    # than the slow default.
+    run_command_or_exit_on_failure(
+        [
+            cmd,
+            "type",
+            "--next-delay",
+            "5",
+            "--",
+            text,
+        ]
+    )
+
+
+# -----------------------------------------------------------------------------
+# Simulate Input: YDOTOOL_CLIPBOARD
+#
+def simulate_typing_with_ydotool_clipboard(delete_prev_chars: int, text: str) -> None:
+    cmd = "ydotool"
+
+    # No setup/tear-down.
+    if delete_prev_chars == SIMULATE_INPUT_CODE_COMMAND:
+        return
+
+    if delete_prev_chars:
+        # ydotool's key subcommand works with int key IDs and key states. 14 is
+        # the linux keycode for the backspace key, and :1 and :0 respectively
+        # stand for "pressed" and "released."
+        #
+        # The key delay is lower than the typing setting because it applies to
+        # each key state change (pressed, released).
+        run_command_or_exit_on_failure(
+            [
+                cmd,
+                "key",
+                "--key-delay",
+                "3",
+                "--",
+                *(["14:1", "14:0"] * delete_prev_chars),
+            ]
+        )
+
+    # Use wl-copy + Ctrl+V to paste text via the Wayland clipboard.
+    # This avoids input method (e.g. Fcitx5) intercepting simulated keystrokes
+    # which would garble CJK characters.
     subprocess.run(["wl-copy", "--", text], check=True)
     time.sleep(0.03)
     run_command_or_exit_on_failure(
@@ -1760,6 +1811,8 @@ def main_begin(
             handle_fn = simulate_typing_with_xdotool
         elif simulate_input_tool == "YDOTOOL":
             handle_fn = simulate_typing_with_ydotool
+        elif simulate_input_tool == "YDOTOOL_CLIPBOARD":
+            handle_fn = simulate_typing_with_ydotool_clipboard
         elif simulate_input_tool == "DOTOOL":
             handle_fn = simulate_typing_with_dotool
         elif simulate_input_tool == "DOTOOLC":
@@ -2231,7 +2284,7 @@ def argparse_create_begin(subparsers: "argparse._SubParsersAction[argparse.Argum
         "--simulate-input-tool",
         dest="simulate_input_tool",
         default="XDOTOOL",
-        choices=("XDOTOOL", "DOTOOL", "DOTOOLC", "YDOTOOL", "WTYPE", "STDOUT"),
+        choices=("XDOTOOL", "DOTOOL", "DOTOOLC", "YDOTOOL", "YDOTOOL_CLIPBOARD", "WTYPE", "STDOUT"),
         metavar="SIMULATE_INPUT_TOOL",
         help=(
             "Program used to simulate keystrokes (default).\n"
@@ -2240,6 +2293,9 @@ def argparse_create_begin(subparsers: "argparse._SubParsersAction[argparse.Argum
             "- ``DOTOOL`` Compatible with all Linux distributions and Wayland.\n"
             "- ``DOTOOLC`` Same as DOTOOL but for use with the `dotoold` daemon.\n"
             "- ``YDOTOOL`` Compatible with all Linux distributions and Wayland but requires some setup.\n"
+            "- ``YDOTOOL_CLIPBOARD`` Like YDOTOOL but injects text via ``wl-copy`` + Ctrl+V.\n"
+            "  Use this on Wayland when an input method (e.g. Fcitx5) intercepts simulated keystrokes.\n"
+            "  Requires ``wl-copy`` (from ``wl-clipboard``).\n"
             "- ``WTYPE`` Compatible with Wayland.\n"
             "- ``STDOUT`` Bare stdout with Ctrl-H for backspaces.\n"
             "  For help on setting up ydotool, see ``readme-ydotool.rst`` in the nerd-dictation repository.\n"
