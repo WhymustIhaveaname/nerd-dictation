@@ -4,6 +4,8 @@
 # Subsequent calls: toggle suspend/resume.
 # Auto-suspends after 2s silence (model stays in memory).
 export YDOTOOL_SOCKET="/run/user/$(id -u)/.ydotool_socket"
+NVIDIA_LIB="$HOME/.local/lib/python3.13/site-packages/nvidia"
+export LD_LIBRARY_PATH="$NVIDIA_LIB/curand/lib:$NVIDIA_LIB/cufft/lib:$NVIDIA_LIB/nvjitlink/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 NERD_DICTATION="$HOME/Codes/VoiceTyping/nerd-dictation/nerd-dictation"
 MODEL_DIR="$HOME/Codes/VoiceTyping/vosk-models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"
 HOTWORDS="$HOME/Codes/VoiceTyping/nerd-dictation/hotwords.txt"
@@ -34,7 +36,7 @@ else
         kill -CONT "$PID"
         notify-send -t 1500 -u low "Voice Typing" "Recording"
     else
-        kill -USR1 "$PID"
-        notify-send -t 1500 -u low "Voice Typing" "Suspended"
+        kill "$PID"
+        notify-send -t 3000 -u critical "Voice Typing" "Manually killed (not timeout)"
     fi
 fi
